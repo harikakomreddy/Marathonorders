@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ordering System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .container {
+            margin-top: 30px;
+        }
+        .order-link {
+            display: block;
+            margin: 10px auto;
+            padding: 15px;
+            width: 300px;
+            background-color: #ffffff;
+            border: 2px solid #4CAF50;
+            text-decoration: none;
+            color: black;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .order-link:hover {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .hidden {
+            display: none;
+        }
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            background-color: white;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 10px;
+            text-align: center;
+        }
+    </style>
+    <script>
+     const productNames = [
+            "Marlboro 83'S Box", "Marlboro Red King Box", "Red Label King Box", "Marlboro Blend 27 Box", "Marl Southern Cut Box",
+            "Marlboro Gold Box", "Marlboto Menthol Box", "Marl Menthol 100 Box", "Marl Menthol Gold Box", "Marl Menthol Gold 100"
+        ];
+
+        const productImages = [
+            "Marlboro83.png", "MarlboroRedKingBox.png", "RedLabelKingBox.png", "MarlboroBlend27Box.png", "MarlSouthernCutBox.png",
+            "MarlboroGoldBox.png", "MarlboroMentholBox.png", "MarlMenthol100Box.png", "MarlMentholGoldBox.png", "MarlMentholGold100.png"
+        ];
+
+        document.addEventListener("DOMContentLoaded", function () {
+            loadSavedData();
+        });
+
+        function showPage(pageId) {
+            document.getElementById("homePage").classList.add("hidden");
+            document.getElementById("htHackneyPage").classList.add("hidden");
+            document.getElementById(pageId).classList.remove("hidden");
+        }
+
+        function addOrder(quantityId, rowClass) {
+    let orderCells = document.getElementsByClassName(rowClass);
+    let inputField = document.getElementById(quantityId);
+    let newOrder = Number(inputField.value);
+
+    if (!isNaN(newOrder) && newOrder > -1) {
+        // Shift all previous values to the left (keeping 5 weeks of history)
+        for (let i = 0; i < orderCells.length - 1; i++) {
+            orderCells[i].textContent = orderCells[i + 1].textContent;
+        }
+        // Add new order/inventory value to the last cell
+        orderCells[orderCells.length - 1].textContent = newOrder;
+
+        // Save changes to localStorage
+        saveData();
+    }
+
+    // Clear input field after submission
+    inputField.value = "";
+}
+
+// Object to store multiple backups for each product
+let backupHistory = {};
+
+function addOrder(quantityId, rowClass) {
+    let orderCells = document.getElementsByClassName(rowClass);
+    let inputField = document.getElementById(quantityId);
+    let newOrder = Number(inputField.value);
+
+    if (!isNaN(newOrder) && newOrder > -1) {
+        // Backup current state before modifying
+        let productKey = rowClass.replace(/\D/g, ""); // Extract product number
+        backupHistory[`product${productKey}`] = Array.from(orderCells).map(cell => cell.textContent);
+
+        // Shift all previous values to the left
+        for (let i = 0; i < orderCells.length - 1; i++) {
+            orderCells[i].textContent = orderCells[i + 1].textContent;
+        }
+        // Add new order/inventory value to the last cell
+        orderCells[orderCells.length - 1].textContent = newOrder;
+
+        // Save changes to localStorage
+        saveData();
+    }
+
+    // Clear input field after submission
+    inputField.value = "";
+}
+
+function clearLastEntry(rowClass) {
+    let orderCells = document.getElementsByClassName(rowClass);
+    let productKey = rowClass.replace(/\D/g, ""); // Extract product number
+
+    // Restore the last saved state if it exists
+    if (backupHistory[`product${productKey}`]) {
+        let previousValues = backupHistory[`product${productKey}`];
+        for (let i = 0; i < orderCells.length; i++) {
+            orderCells[i].textContent = previousValues[i];
+        }
+    }
+
+    saveData();
+}
+
+        function saveData() {
+            let tableData = {};
+            for (let i = 0; i < productNames.length; i++) {
+                let inventoryCells = Array.from(document.getElementsByClassName(`inventory-history-${i + 1}`)).map(cell => cell.textContent);
+                let orderCells = Array.from(document.getElementsByClassName(`order-history-${i + 1}`)).map(cell => cell.textContent);
+                tableData[`product${i + 1}`] = { inventory: inventoryCells, orders: orderCells };
+            }
+            localStorage.setItem("orderHistoryData", JSON.stringify(tableData));
+        }
+
+        function loadSavedData() {
+            let savedData = localStorage.getItem("orderHistoryData");
+            if (savedData) {
+                let tableData = JSON.parse(savedData);
+                for (let i = 0; i < productNames.length; i++) {
+                    let inventoryCells = document.getElementsByClassName(`inventory-history-${i + 1}`);
+                    let orderCells = document.getElementsByClassName(`order-history-${i + 1}`);
+                    if (tableData[`product${i + 1}`]) {
+                        tableData[`product${i + 1}`].inventory.forEach((value, index) => inventoryCells[index].textContent = value);
+                        tableData[`product${i + 1}`].orders.forEach((value, index) => orderCells[index].textContent = value);
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="header">Ordering System</div>
+    
+    <div id="homePage" class="container">
+        <button class="order-link" onclick="showPage('htHackneyPage')">H.T. Hackney</button>
+    </div>
+
+    <div id="htHackneyPage" class="hidden">
+        <h1>H.T. Hackney - Order History & Barcodes</h1>
+
+        <script>
+            for (let i = 0; i < productNames.length; i++) {
+                document.write(`
+                    <table>
+                        <tr>
+                            <th colspan="2">${productNames[i]}</th>
+                            <th colspan="5">Last 5 Weeks' Orders</th>
+                            <th colspan="2">New Order</th>
+                        </tr>
+                        <tr>
+                            <td colspan="2"><img src="${productImages[i]}" alt="${productNames[i]}" width="170"></td>
+                            <td>Week 1</td>
+                            <td>Week 2</td>
+                            <td>Week 3</td>
+                            <td>Week 4</td>
+                            <td>Week 5</td>
+                            <td>Inventory</td>
+                            <td>Order</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"></td>
+                            <td class="inventory-history-${i + 1}">120</td>
+                            <td class="inventory-history-${i + 1}">95</td>
+                            <td class="inventory-history-${i + 1}">110</td>
+                            <td class="inventory-history-${i + 1}">105</td>
+                            <td class="inventory-history-${i + 1}">130</td>
+                            <td rowspan="2">
+                                <input type="number" id="inv${i + 1}" placeholder="Enter inventory">
+                                <button onclick="addOrder('inv${i + 1}', 'inventory-history-${i + 1}')">Submit</button>
+                                <button onclick="clearLastEntry('inventory-history-${i + 1}')">Clear Last Entry</button>
+                            </td>
+                            <td rowspan="2">
+                                <input type="number" id="order${i + 1}" placeholder="Enter order">
+                                <button onclick="addOrder('order${i + 1}', 'order-history-${i + 1}')">Submit</button>
+                                <button onclick="clearLastEntry('order-history-${i + 1}')">Clear Last Entry</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"></td>
+                            <td class="order-history-${i + 1}">10</td>
+                            <td class="order-history-${i + 1}">15</td>
+                            <td class="order-history-${i + 1}">12</td>
+                            <td class="order-history-${i + 1}">20</td>
+                            <td class="order-history-${i + 1}">18</td>
+                        </tr>
+                    </table>
+                `);
+            }
+        </script>
+
+        <br>
+        <button class="order-link" onclick="showPage('homePage')">Back to Home</button>
+    </div>
+</body>
+</html>
